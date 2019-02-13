@@ -2,11 +2,42 @@ from scraper import fetchFromURL
 from bs4 import BeautifulSoup 
 import json
 import os
+import nltk
+nltk.download('punkt')
 
 def main():
     
-    downloadAllWorks()
+    #downloadAllWorks()
+    directory = "UnitDocumentsHTML"
+    count = 0
+    for subDir in os.listdir(directory):
+        if count < 1:
+            count1 = 0
+            for fileName in os.listdir(directory + "/" + subDir):
+                if count1 < 1:
+                    filePath = directory + "/" + subDir + "/" + fileName
+                    print(filePath)
+                    f = open(filePath,"r")
+                    contents = f.read()
+                    soup = BeautifulSoup(contents, 'html.parser')
+                    normalizedTokens = []
+                    for row in soup.find_all('blockquote'):
+                        #TODO: add exception for poetry all content in blockquotes not a
+                        for sentence in row.find_all('a'):
+                            #TODO: ignore last for sentences. They are not part of the work
+                            sentenceText = sentence.text
+                            #print(sentenceText)
+                            tokens = nltk.word_tokenize(sentenceText)
+                            #print(tokens)
+                            porter = nltk.PorterStemmer()
+                            for t in tokens:
+                               normalizedToken = porter.stem(t)
+                               normalizedTokens.append(normalizedToken)
 
+                count1 += 1
+        count += 1
+
+    print(normalizedTokens)
 
 def downloadAllWorks():
 
@@ -35,14 +66,16 @@ def downloadAllWorks():
     for work in newTargetURLS:
         for page in work:
             raw_html = fetchFromURL(page)
-            jsonText = json.dumps(raw_html.decode("utf-8"))
+            #jsonText = json.dumps(raw_html.decode("utf-8"))
             cwd = os.getcwd()
-            filename = cwd + "/UnitDocuments/" + page[26:] + ".json"
+            #filename = cwd + "/UnitDocuments/" + page[26:] + ".json"
             
+            filename = cwd + "/UnitDocumentsHTML/" + page[26:]
             os.makedirs(os.path.dirname(filename), exist_ok=True)
 
             with open(filename,"w") as f:
-                f.write(jsonText)
+                #f.write(jsonText)
+                f.write(raw_html.decode("utf-8"))
             f.close()
 
     return
