@@ -1,3 +1,9 @@
+'''
+Trevor Weber
+ISR
+HW1
+Feb 23, 2019
+'''
 from scraper import fetchFromURL
 from bs4 import BeautifulSoup 
 import json
@@ -12,7 +18,9 @@ def main():
     
     downloadAllWorks()
     print("Processing Unit Documents...")
-    customStopWords = [",",";",".",":","!","?","'s","'d","thou","thy","'","thee","--","hath","let","'ll"]
+    customStopWords = [",",";",".",":","!","?",
+                    "'s","'d","thou","thy","'",
+                    "thee","--","hath","let","'ll"]
     stopWords = set(stopwords.words('english') + customStopWords)
     directory = "UnitDocumentsHTML"
     normalizedTokens = []
