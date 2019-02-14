@@ -3,43 +3,70 @@ from bs4 import BeautifulSoup
 import json
 import os
 import nltk
+from nltk.corpus import stopwords
 nltk.download('punkt')
+nltk.download('stopwords')
+#from collections import Counter
 
 def main():
     
-    #downloadAllWorks()
+    downloadAllWorks()
+    print("Processing Unit Documents...")
+    customStopWords = [",",";",".",":","!","?","'s","'d","thou","thy","'","thee","--","hath","let","'ll"]
+    stopWords = set(stopwords.words('english') + customStopWords)
     directory = "UnitDocumentsHTML"
-    count = 0
+    normalizedTokens = []
+    #run through all the downloaded files
     for subDir in os.listdir(directory):
-        if count < 1:
-            count1 = 0
-            for fileName in os.listdir(directory + "/" + subDir):
-                if count1 < 1:
-                    filePath = directory + "/" + subDir + "/" + fileName
-                    print(filePath)
-                    f = open(filePath,"r")
-                    contents = f.read()
-                    soup = BeautifulSoup(contents, 'html.parser')
-                    normalizedTokens = []
-                    for row in soup.find_all('blockquote'):
-                        #TODO: add exception for poetry all content in blockquotes not a
-                        for sentence in row.find_all('a'):
-                            #TODO: ignore last for sentences. They are not part of the work
-                            sentenceText = sentence.text
+        for fileName in os.listdir(directory + "/" + subDir):
+            filePath = directory + "/" + subDir + "/" + fileName
+            #filePath = "UnitDocumentsHTML/Poetry/LoversComplaint.html"
+            #print(filePath)
+            f = open(filePath,"r")
+            contents = f.read()
+            f.close()
+            soup = BeautifulSoup(contents, 'html.parser')
+            #for each file find all the text
+            for row in soup.find_all('blockquote'):
+                #poetry is laid out diffrently so make an exception
+                if "Poetry" in filePath:
+                    sentenceText = row.text.lower()
+                    #print(sentenceText)
+                    #tokenize the sentence
+                    tokens = nltk.word_tokenize(sentenceText)
+                    #print(tokens)
+                    porter = nltk.PorterStemmer()
+                    for t in tokens:
+                        #if the word isnt a stop word 
+                        #normalize it and add it to the list
+                        if t not in stopWords:
+                            normalizedToken = porter.stem(t)
+                            normalizedTokens.append(normalizedToken)
+                else:
+                    scene = row.find_all('a')
+                    counter = 0
+                    for sentence in scene:
+                        #ignore the last 4 sentences
+                        #they are not part of the scene
+                        if counter < len(scene) - 4:
+                            sentenceText = sentence.text.lower()
                             #print(sentenceText)
                             tokens = nltk.word_tokenize(sentenceText)
                             #print(tokens)
                             porter = nltk.PorterStemmer()
                             for t in tokens:
-                               normalizedToken = porter.stem(t)
-                               normalizedTokens.append(normalizedToken)
+                                if t not in stopWords:
+                                    normalizedToken = porter.stem(t)
+                                    normalizedTokens.append(normalizedToken)
+                            counter += 1
 
-                count1 += 1
-        count += 1
-
-    print(normalizedTokens)
+    print("INITIAL VOCABULARY:\n" + str(set(normalizedTokens)))
+    print("STOPWORDS:\n" + str(stopWords))
+    #data = Counter(normalizedTokens)
+    #print(data.most_common())
 
 def downloadAllWorks():
+    print("Downloading Unit Documents...")
 
     baseurl = 'http://shakespeare.mit.edu'
     raw_html = fetchFromURL(baseurl) 
@@ -66,33 +93,20 @@ def downloadAllWorks():
     for work in newTargetURLS:
         for page in work:
             raw_html = fetchFromURL(page)
-            #jsonText = json.dumps(raw_html.decode("utf-8"))
             cwd = os.getcwd()
-            #filename = cwd + "/UnitDocuments/" + page[26:] + ".json"
-            
             filename = cwd + "/UnitDocumentsHTML/" + page[26:]
             os.makedirs(os.path.dirname(filename), exist_ok=True)
-
+            #copy the html text to a file
             with open(filename,"w") as f:
-                #f.write(jsonText)
                 f.write(raw_html.decode("utf-8"))
             f.close()
-
     return
 
 def get_works_urls(target):
 
-    """
-
-    Example of isolating different parent elements to gather subsequent URLs
-
-    """
-
     soup = BeautifulSoup(target, 'html.parser')
     targeturls = []
-    #print(soup.prettify())
     for row in soup.find_all('td'):
-
         for link in row.find_all('a'):
             linkString = link.get('href')
             if linkString != "http://tech.mit.edu/" and linkString != "http://www.python.org/~jeremy/":
@@ -102,17 +116,9 @@ def get_works_urls(target):
 
 def get_scene_urls(target,baseURL):
 
-    """
-
-    Example of isolating different parent elements to gather subsequent URLs
-
-    """
-
     soup = BeautifulSoup(target, 'html.parser')
     targeturls = []
-    #print(soup.prettify())
     for row in soup.find_all('p'):
-
         for link in row.find_all('a'):
             linkString = link.get('href')
             if "amazon" not in linkString and "full" not in linkString:
@@ -122,15 +128,8 @@ def get_scene_urls(target,baseURL):
 
 def get_sonnet_urls(target,baseURL):
 
-    """
-
-    Example of isolating different parent elements to gather subsequent URLs
-
-    """
-
     soup = BeautifulSoup(target, 'html.parser')
     targeturls = []
-    #print(soup.prettify())
     for row in soup.find_all('dl'):
         for link in row.find_all('a'):
             linkString = link.get('href')
