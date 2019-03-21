@@ -1,8 +1,8 @@
 '''
 Trevor Weber
 ISR
-HW1
-Feb 23, 2019
+hw2
+Mar 21, 2019
 '''
 from scraper import fetchFromURL
 from bs4 import BeautifulSoup 
@@ -53,9 +53,8 @@ def main():
                             #print(tokens)
                             counter += 1
     
-    #for each term in TermIndex generate a Bigram
     bigramIndex = createBigramIndex(termIndex)
-    print(bigramIndex) 
+    
     writeToJSON(termIndex,"TermIndex.json")
     writeToJSON(bigramIndex,"BigramIndex.json")
 
@@ -90,6 +89,7 @@ def generateTermDict(tokens,termIndex,fileName):
                     "thee","--","hath","let","'ll"]
     stopWords = set(stopwords.words('english') + customStopWords)
     porter = nltk.PorterStemmer()
+    
     for t in tokens:
         #if the word isnt a stop word 
         #normalize it and add it to the dict
