@@ -23,7 +23,7 @@ def main():
                     "thee","--","hath","let","'ll"]
     stopWords = set(stopwords.words('english') + customStopWords)
     directory = "UnitDocumentsHTML"
-    normalizedTokens = []
+    bigramIndex = {}
     #run through all the downloaded files
     for subDir in os.listdir(directory):
         for fileName in os.listdir(directory + "/" + subDir):
@@ -45,11 +45,26 @@ def main():
                     #print(tokens)
                     porter = nltk.PorterStemmer()
                     for t in tokens:
+                        keyList = []
                         #if the word isnt a stop word 
-                        #normalize it and add it to the list
+                        #normalize it and add it to the list 
                         if t not in stopWords:
                             normalizedToken = porter.stem(t)
-                            normalizedTokens.append(normalizedToken)
+                            keyList = []
+                            if normalizedToken not in bigramIndex:
+                                #print(normalizedToken + " not in bigram")
+                                keyList = [1,fileName]
+                                bigramIndex[normalizedToken] = keyList
+                            elif normalizedToken in bigramIndex:
+                                #print(normalizedToken + " in bigram")
+                                #print(keyList)
+                                keyList = bigramIndex[normalizedToken]
+                                keyList[0] += 1
+                                if fileName not in keyList:
+                                    keyList.append(fileName)
+                                bigramIndex[normalizedToken] = keyList
+                            #add token if not there, increase freq, add document found in
+                            #normalizedTokens.append(normalizedToken)
                 else:
                     scene = row.find_all('a')
                     counter = 0
@@ -65,16 +80,30 @@ def main():
                             for t in tokens:
                                 if t not in stopWords:
                                     normalizedToken = porter.stem(t)
-                                    normalizedTokens.append(normalizedToken)
+                                    keyList = []
+                                    if normalizedToken not in bigramIndex:
+                                 #       print(normalizedToken + " not in bigram")
+                                        keyList = [1,fileName]
+                                        bigramIndex[normalizedToken] = keyList
+                                    elif normalizedToken in bigramIndex:
+                                  #      print(normalizedToken + " in bigram")
+                                   #     print(keyList)
+                                        keyList = bigramIndex[normalizedToken]
+                                        keyList[0] += 1
+                                        if fileName not in keyList:
+                                            keyList.append(fileName)
+                                        bigramIndex[normalizedToken] = keyList
+                                    #add token if not there, increase freq, add document found in
+                                    #normalizedTokens.append(normalizedToken)
                             counter += 1
     cwd = os.getcwd()
     vocabFilePath = cwd + "/Vocabulary/Vocabulary.txt"
     os.makedirs(os.path.dirname(vocabFilePath),exist_ok=True)
     vocabFile = open(vocabFilePath,"w")
-    vocabFile.write(str(set(normalizedTokens)) + "\n" + str(stopWords))
+    vocabFile.write(str(bigramIndex) + "\n" + str(stopWords))
     vocabFile.close()
-    print("INITIAL VOCABULARY:\n" + str(set(normalizedTokens)))
-    print("STOPWORDS:\n" + str(stopWords))
+    #print("INITIAL VOCABULARY:\n" + str(set(normalizedTokens)))
+    #print("STOPWORDS:\n" + str(stopWords))
     #data = Counter(normalizedTokens)
     #print(data.most_common())
 
