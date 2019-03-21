@@ -16,7 +16,7 @@ nltk.download('stopwords')
 
 def main():
     
-    downloadAllWorks()
+    #downloadAllWorks()
     print("Processing Unit Documents...")
     customStopWords = [",",";",".",":","!","?",
                     "'s","'d","thou","thy","'",
@@ -67,7 +67,12 @@ def main():
                                     normalizedToken = porter.stem(t)
                                     normalizedTokens.append(normalizedToken)
                             counter += 1
-
+    cwd = os.getcwd()
+    vocabFilePath = cwd + "/Vocabulary/Vocabulary.txt"
+    os.makedirs(os.path.dirname(vocabFilePath),exist_ok=True)
+    vocabFile = open(vocabFilePath,"w")
+    vocabFile.write(str(set(normalizedTokens)) + "\n" + str(stopWords))
+    vocabFile.close()
     print("INITIAL VOCABULARY:\n" + str(set(normalizedTokens)))
     print("STOPWORDS:\n" + str(stopWords))
     #data = Counter(normalizedTokens)
