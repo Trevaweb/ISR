@@ -1,8 +1,8 @@
 '''
 Trevor Weber
 ISR
-HW1
-Feb 23, 2019
+hw2
+Mar 21, 2019
 '''
 from scraper import fetchFromURL
 from bs4 import BeautifulSoup 
@@ -18,12 +18,8 @@ def main():
     
     #downloadAllWorks()
     print("Processing Unit Documents...")
-    customStopWords = [",",";",".",":","!","?",
-                    "'s","'d","thou","thy","'",
-                    "thee","--","hath","let","'ll"]
-    stopWords = set(stopwords.words('english') + customStopWords)
     directory = "UnitDocumentsHTML"
-    normalizedTokens = []
+    termIndex = {}
     #run through all the downloaded files
     for subDir in os.listdir(directory):
         for fileName in os.listdir(directory + "/" + subDir):
@@ -42,14 +38,7 @@ def main():
                     #print(sentenceText)
                     #tokenize the sentence
                     tokens = nltk.word_tokenize(sentenceText)
-                    #print(tokens)
-                    porter = nltk.PorterStemmer()
-                    for t in tokens:
-                        #if the word isnt a stop word 
-                        #normalize it and add it to the list
-                        if t not in stopWords:
-                            normalizedToken = porter.stem(t)
-                            normalizedTokens.append(normalizedToken)
+                    termDict = generateTermDict(tokens,termIndex,fileName)
                 else:
                     scene = row.find_all('a')
                     counter = 0
@@ -60,23 +49,70 @@ def main():
                             sentenceText = sentence.text.lower()
                             #print(sentenceText)
                             tokens = nltk.word_tokenize(sentenceText)
+                            termDict = generateTermDict(tokens,termIndex,fileName)
                             #print(tokens)
-                            porter = nltk.PorterStemmer()
-                            for t in tokens:
-                                if t not in stopWords:
-                                    normalizedToken = porter.stem(t)
-                                    normalizedTokens.append(normalizedToken)
                             counter += 1
+    
+    bigramIndex = createBigramIndex(termIndex)
+    
+    writeToJSON(termIndex,"TermIndex.json")
+    writeToJSON(bigramIndex,"BigramIndex.json")
+
+def writeToJSON(data,fileName):
+
     cwd = os.getcwd()
-    vocabFilePath = cwd + "/Vocabulary/Vocabulary.txt"
-    os.makedirs(os.path.dirname(vocabFilePath),exist_ok=True)
-    vocabFile = open(vocabFilePath,"w")
-    vocabFile.write(str(set(normalizedTokens)) + "\n" + str(stopWords))
-    vocabFile.close()
-    print("INITIAL VOCABULARY:\n" + str(set(normalizedTokens)))
-    print("STOPWORDS:\n" + str(stopWords))
-    #data = Counter(normalizedTokens)
-    #print(data.most_common())
+    filePath = cwd + "/Output/" + fileName
+    os.makedirs(os.path.dirname(filePath),exist_ok=True)
+    
+    with open(filePath,"w") as outputFile:
+        json.dump(data,outputFile)
+        
+        #Pretty Print
+        #json.dump(data,outputFile,indent=4)
+
+    return
+
+def createBigramIndex(termIndex):
+
+    bigramIndex = {}
+
+    for term in termIndex:
+        bigrams = nltk.bigrams(term)
+        bigramIndex[term] = list(bigrams)
+    
+    return bigramIndex
+
+def generateTermDict(tokens,termIndex,fileName):
+    
+    customStopWords = [",",";",".",":","!","?",
+                    "'s","'d","thou","thy","'",
+                    "thee","--","hath","let","'ll"]
+    stopWords = set(stopwords.words('english') + customStopWords)
+    porter = nltk.PorterStemmer()
+    
+    for t in tokens:
+        #if the word isnt a stop word 
+        #normalize it and add it to the dict
+        if t not in stopWords:
+            normalizedToken = porter.stem(t)
+            keyList = []
+            #add token if not there, increase freq, add document found in
+            if normalizedToken not in termIndex:
+                #print(normalizedToken + " not in bigram")
+                keyList = [1,fileName]
+                termIndex[normalizedToken] = keyList
+            #otherwise it is there so increase freq and add new document
+            elif normalizedToken in termIndex:
+                #print(normalizedToken + " in bigram")
+                #print(keyList)
+                keyList = termIndex[normalizedToken]
+                keyList[0] += 1
+                #dont want repeat document IDs
+                if fileName not in keyList:
+                    keyList.append(fileName)
+                termIndex[normalizedToken] = keyList
+
+    return termIndex
 
 def downloadAllWorks():
     print("Downloading Unit Documents...")
