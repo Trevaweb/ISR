@@ -78,7 +78,14 @@ def createBigramIndex(termIndex):
 
     for term in termIndex:
         bigrams = nltk.bigrams(term)
-        bigramIndex[term] = list(bigrams)
+        for bigram in bigrams:
+            #bigram -> ["a","b"]
+            bigramString = str(bigram[0]) + str(bigram[1])
+            if bigramString not in bigramIndex:
+                termList = [term]
+                bigramIndex[bigramString] = termList
+            else:
+                bigramIndex[bigramString].append(term)
     
     return bigramIndex
 
