@@ -10,12 +10,15 @@ import json
 import os
 import nltk
 from nltk.corpus import stopwords
-nltk.download('punkt')
-nltk.download('stopwords')
+#nltk.download('punkt')
+#nltk.download('stopwords')
 #from collections import Counter
 
 def main():
-    
+    customStopWords = [",",";",".",":","!","?",
+                    "'s","'d","thou","thy","'",
+                    "thee","--","hath","let","'ll"]
+    stopWords = set(stopwords.words('english') + customStopWords)
     #downloadAllWorks()
     print("Processing Unit Documents...")
     directory = "UnitDocumentsHTML"
@@ -57,6 +60,37 @@ def main():
     
     writeToJSON(termIndex,"TermIndex.json")
     writeToJSON(bigramIndex,"BigramIndex.json")
+    while(1):
+        #get user query
+        userQuery = input("Enter a search term: ")
+        if userQuery == "exit":
+            return
+        print("You entered: " + userQuery)
+        
+        #normalize token
+        porter = nltk.PorterStemmer()
+        #tokenQuery = nltk.word_tokenize(userQuery.lower())
+        normalizedQuery = porter.stem(userQuery.lower())
+        #check if query is in stop list
+        if normalizedQuery in stopWords:
+            print("The term \"" + userQuery + "\" is too vague or common to be searched for.\nPlease try again.\n")
+
+        #elseif query in inverted index
+        elif normalizedQuery in termIndex:
+            postingList = termIndex[normalizedQuery]
+            print(postingList)
+            #return formatted posting list
+        #else check for spelling corrections
+            #generate bi gram for user query 
+            #for bigram in querybigrams
+                #create set of terms associated with bigram from bigram index
+            #for returned term
+                #calc the jaccard coefficient against query
+                #if within threshold
+                    #add to spelling corrected list
+            
+        #return spelling correct list
+
 
 def writeToJSON(data,fileName):
 
@@ -88,6 +122,28 @@ def createBigramIndex(termIndex):
                 bigramIndex[bigramString].append(term)
     
     return bigramIndex
+
+#def generateTermDict(tokens,termIndex,fileName):
+#    
+#    customStopWords = [",",";",".",":","!","?",
+#                    "'s","'d","thou","thy","'",
+#                    "thee","--","hath","let","'ll"]
+#    stopWords = set(stopwords.words('english') + customStopWords)
+#    porter = nltk.PorterStemmer()
+#    
+#    for t in tokens:
+#        #if the word isnt a stop word 
+#        #normalize it and add it to the dict
+#        if t not in stopWords:
+#            normalizedToken = porter.stem(t)
+#            keyList = []
+#            #add token if not there, increase freq, add document found in
+#            if normalizedToken not in termIndex:
+#                bigramIndex[bigramString] = termList
+#            else:
+#                bigramIndex[bigramString].append(term)
+#    
+#    return bigramIndex
 
 def generateTermDict(tokens,termIndex,fileName):
     
@@ -173,25 +229,6 @@ def get_works_urls(target):
 def get_scene_urls(target,baseURL):
 
     soup = BeautifulSoup(target, 'html.parser')
-    targeturls = []
-    for row in soup.find_all('p'):
-        for link in row.find_all('a'):
-            linkString = link.get('href')
-            if "amazon" not in linkString and "full" not in linkString:
-                targeturls.append(baseURL + "/" + linkString)
-            
-    return targeturls
 
-def get_sonnet_urls(target,baseURL):
-
-    soup = BeautifulSoup(target, 'html.parser')
-    targeturls = []
-    for row in soup.find_all('dl'):
-        for link in row.find_all('a'):
-            linkString = link.get('href')
-            if "amazon" not in linkString:
-                targeturls.append(baseURL[0:-13] + "/" + linkString)
-            
-    return targeturls
 
 main()
