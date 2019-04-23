@@ -78,7 +78,14 @@ def main():
         #elseif query in inverted index
         elif normalizedQuery in termIndex:
             postingList = termIndex[normalizedQuery]
-            print(postingList)
+            count = 0
+            print("The term \"" + userQuery + "\" is found in the following documents:\n*****************************************************")
+            for posting in postingList:
+                #ignore the first posting as its the freq
+                if count > 0:
+                    print(posting)
+                count += 1
+
             #return formatted posting list
         #else check for spelling corrections
             #generate bi gram for user query 
