@@ -86,9 +86,33 @@ def main():
                     print(posting)
                 count += 1
 
-            #return formatted posting list
-        #else check for spelling corrections
-            #generate bi gram for user query 
+            #return formatted posting l
+        #else check for spelling correctionsi
+        else:
+
+            #generate bi gram for user query
+            queryBigrams = []
+            bigramList = nltk.bigrams(userQuery)
+            print(str(len(list(bigramList))))
+            count = 0
+            for bigram in bigramList:
+                print(bigram)
+                
+                #bigram -> ["a","b"]
+                if count == 0:
+                    bigramString = "$" + str(bigram[0]) + str(bigram[1])
+                elif count == len(list(bigramList)) + 1:
+                    bigramString = str(bigram[0]) + str(bigram[1]) + "$"
+                else:        
+                    bigramString = str(bigram[0]) + str(bigram[1])
+                count += 1               
+                print(bigramString)
+                queryBigrams.append(bigramString)
+                
+            
+                print(queryBigrams)
+
+
             #for bigram in querybigrams
                 #create set of terms associated with bigram from bigram index
             #for returned term
@@ -118,10 +142,17 @@ def createBigramIndex(termIndex):
     bigramIndex = {}
 
     for term in termIndex:
-        bigrams = nltk.bigrams(term)
-        for bigram in bigrams:
+        bigramList = nltk.bigrams(term)
+        count = 0
+        for bigram in bigramList:
             #bigram -> ["a","b"]
-            bigramString = str(bigram[0]) + str(bigram[1])
+            if count == 0:
+                bigramString = "$" + str(bigram[0]) + str(bigram[1])
+            elif count == len(list(bigramList)) + 1:
+                bigramString = str(bigram[0]) + str(bigram[1]) + "$"
+            else:        
+                bigramString = str(bigram[0]) + str(bigram[1])
+            count += 1
             if bigramString not in bigramIndex:
                 termList = [term]
                 bigramIndex[bigramString] = termList
@@ -129,6 +160,9 @@ def createBigramIndex(termIndex):
                 bigramIndex[bigramString].append(term)
     
     return bigramIndex
+
+
+    
 
 #def generateTermDict(tokens,termIndex,fileName):
 #    
