@@ -60,25 +60,24 @@ def main():
     
     writeToJSON(termIndex,"TermIndex.json")
     writeToJSON(bigramIndex,"BigramIndex.json")
+    #wait for user queries
     while(1):
         #get user query
-        userQuery = input("Enter a search term: ")
+        userQuery = input("\nEnter a search term or type \"exit\" to exit: ")
         if userQuery == "exit":
-            return
-        print("You entered: " + userQuery)
-        
+            return 
         #normalize token
         porter = nltk.PorterStemmer()
-        #tokenQuery = nltk.word_tokenize(userQuery.lower())
         normalizedQuery = porter.stem(userQuery.lower())
         #check if query is in stop list
         if normalizedQuery in stopWords:
-            print("The term \"" + userQuery + "\" is too vague or common to be searched for.\nPlease try again.\n")
+            print("\nThe term \"" + userQuery + "\" is too common to be searched for.\nPlease try again.\n")
 
         #elseif query in inverted index
         elif normalizedQuery in termIndex:
             postingList = termIndex[normalizedQuery]
             count = 0
+            #return formatted posting
             print("The term \"" + userQuery + "\" is found in the following documents:\n*****************************************************")
             for posting in postingList:
                 #ignore the first posting as its the freq
@@ -86,41 +85,36 @@ def main():
                     print(posting)
                 count += 1
 
-            #return formatted posting l
-        #else check for spelling correctionsi
+        #else check for spelling corrections
         else:
-
-            #generate bi gram for user query
-            queryBigrams = []
-            bigramList = nltk.bigrams(userQuery)
-            print(str(len(list(bigramList))))
-            count = 0
-            for bigram in bigramList:
-                print(bigram)
-                
-                #bigram -> ["a","b"]
-                if count == 0:
-                    bigramString = "$" + str(bigram[0]) + str(bigram[1])
-                elif count == len(list(bigramList)) + 1:
-                    bigramString = str(bigram[0]) + str(bigram[1]) + "$"
-                else:        
-                    bigramString = str(bigram[0]) + str(bigram[1])
-                count += 1               
-                print(bigramString)
-                queryBigrams.append(bigramString)
-                
-            
-                print(queryBigrams)
-
-
+            userQueryList = []
+            userQueryList.append(userQuery)
+            queryBigrams = createBigramIndex(userQueryList)
+            associatedTermsList = []
+            correctedTerms = []
             #for bigram in querybigrams
-                #create set of terms associated with bigram from bigram index
-            #for returned term
-                #calc the jaccard coefficient against query
-                #if within threshold
-                    #add to spelling corrected list
-            
-        #return spelling correct list
+            for bigram in queryBigrams:
+                if bigram in bigramIndex:
+                    associatedTerms = bigramIndex[bigram]
+                    associatedTermsList.extend(associatedTerms)
+            #create set of terms associated with bigram from bigram index
+            associatedTermsSet = set(associatedTermsList)
+            #for terms, calc the jaccard coefficient against query
+            for term in associatedTermsSet:
+                termSet = set(term)
+                querySet = set(userQuery)
+                jDistance = nltk.jaccard_distance(termSet,querySet)
+                #if within threshold, add to spelling corrected list
+                if round(jDistance,2) <= 0.25:
+                    correctedTerms.append(term)
+
+            if len(correctedTerms) == 0:
+                print("The term \"" + userQuery + "\" is too vague to be searched for.\nPlease try again.\n")
+            else:
+                #return spelling correct list
+                print("The term \"" + userQuery +  "\" could not be found. Did you mean:\n*************************************************")
+                for correctedTerm in correctedTerms:
+                    print(correctedTerm)
 
 
 def writeToJSON(data,fileName):
@@ -140,51 +134,30 @@ def writeToJSON(data,fileName):
 def createBigramIndex(termIndex):
 
     bigramIndex = {}
-
     for term in termIndex:
         bigramList = nltk.bigrams(term)
-        count = 0
+        count = 1
         for bigram in bigramList:
             #bigram -> ["a","b"]
-            if count == 0:
+            if count == 1:
                 bigramString = "$" + str(bigram[0]) + str(bigram[1])
-            elif count == len(list(bigramList)) + 1:
+            
+            elif count == len(str(term)) - 1:
                 bigramString = str(bigram[0]) + str(bigram[1]) + "$"
+            
             else:        
                 bigramString = str(bigram[0]) + str(bigram[1])
             count += 1
+            
             if bigramString not in bigramIndex:
                 termList = [term]
                 bigramIndex[bigramString] = termList
             else:
                 bigramIndex[bigramString].append(term)
-    
+        else:
+            exit
+            
     return bigramIndex
-
-
-    
-
-#def generateTermDict(tokens,termIndex,fileName):
-#    
-#    customStopWords = [",",";",".",":","!","?",
-#                    "'s","'d","thou","thy","'",
-#                    "thee","--","hath","let","'ll"]
-#    stopWords = set(stopwords.words('english') + customStopWords)
-#    porter = nltk.PorterStemmer()
-#    
-#    for t in tokens:
-#        #if the word isnt a stop word 
-#        #normalize it and add it to the dict
-#        if t not in stopWords:
-#            normalizedToken = porter.stem(t)
-#            keyList = []
-#            #add token if not there, increase freq, add document found in
-#            if normalizedToken not in termIndex:
-#                bigramIndex[bigramString] = termList
-#            else:
-#                bigramIndex[bigramString].append(term)
-#    
-#    return bigramIndex
 
 def generateTermDict(tokens,termIndex,fileName):
     
