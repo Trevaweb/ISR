@@ -62,7 +62,7 @@ def main():
     writeToJSON(termIndex,"TermIndex.json")
     writeToJSON(bigramIndex,"BigramIndex.json")
     now = time.time()
-    print("It took: " + now-then + " seconds")
+    print("It took: " + str(now-then) + " seconds")
     #wait for user queries
     while(1):
         #get user query
