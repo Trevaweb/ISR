@@ -10,16 +10,18 @@ import json
 import os
 import nltk
 from nltk.corpus import stopwords
-#nltk.download('punkt')
-#nltk.download('stopwords')
-#from collections import Counter
-
+nltk.download('punkt')
+nltk.download('stopwords')
+from collections import Counter
+import time
+import random
 def main():
+    then = time.time()
     customStopWords = [",",";",".",":","!","?",
                     "'s","'d","thou","thy","'",
                     "thee","--","hath","let","'ll"]
     stopWords = set(stopwords.words('english') + customStopWords)
-    #downloadAllWorks()
+    downloadAllWorks()
     print("Processing Unit Documents...")
     directory = "UnitDocumentsHTML"
     termIndex = {}
@@ -60,6 +62,8 @@ def main():
     
     writeToJSON(termIndex,"TermIndex.json")
     writeToJSON(bigramIndex,"BigramIndex.json")
+    now = time.time()
+    print("It took: " + now-then + " seconds")
     #wait for user queries
     while(1):
         #get user query
@@ -244,5 +248,16 @@ def get_scene_urls(target,baseURL):
 
     soup = BeautifulSoup(target, 'html.parser')
 
+def get_sonnet_urls(target,baseURL):
+
+    soup = BeautifulSoup(target, 'html.parser')
+    targeturls = []
+    for row in soup.find_all('dl'):
+        for link in row.find_all('a'):
+            linkString = link.get('href')
+            if "amazon" not in linkString:
+                targeturls.append(baseURL[0:-13] + "/" + linkString)
+            
+    return targeturls
 
 main()
