@@ -12,7 +12,6 @@ import nltk
 from nltk.corpus import stopwords
 nltk.download('punkt')
 nltk.download('stopwords')
-from collections import Counter
 import time
 import random
 def main():
@@ -247,6 +246,14 @@ def get_works_urls(target):
 def get_scene_urls(target,baseURL):
 
     soup = BeautifulSoup(target, 'html.parser')
+    targeturls = []
+    for row in soup.find_all('p'):
+        for link in row.find_all('a'):
+            linkString = link.get('href')
+            if "amazon" not in linkString and "full" not in linkString:
+                targeturls.append(baseURL + "/" + linkString)
+
+    return targeturls
 
 def get_sonnet_urls(target,baseURL):
 
