@@ -12,11 +12,12 @@ import nltk
 from nltk.corpus import stopwords
 nltk.download('punkt')
 nltk.download('stopwords')
-#from collections import Counter
-
 def main():
-    
-    #downloadAllWorks()
+    customStopWords = [",",";",".",":","!","?",
+                    "'s","'d","thou","thy","'",
+                    "thee","--","hath","let","'ll"]
+    stopWords = set(stopwords.words('english') + customStopWords)
+    downloadAllWorks()
     print("Processing Unit Documents...")
     directory = "UnitDocumentsHTML"
     termIndex = {}
@@ -57,6 +58,62 @@ def main():
     
     writeToJSON(termIndex,"TermIndex.json")
     writeToJSON(bigramIndex,"BigramIndex.json")
+    #wait for user queries
+    while(1):
+        #get user query
+        userQuery = input("\nEnter a search term or type \"exit\" to exit: ")
+        if userQuery == "exit":
+            return 
+        #normalize token
+        porter = nltk.PorterStemmer()
+        normalizedQuery = porter.stem(userQuery.lower())
+        #check if query is in stop list
+        if normalizedQuery in stopWords:
+            print("\nThe term \"" + userQuery + "\" is too common to be searched for.\nPlease try again.\n")
+
+        #elseif query in inverted index
+        elif normalizedQuery in termIndex:
+            postingList = termIndex[normalizedQuery]
+            count = 0
+            #return formatted posting
+            print("The term \"" + userQuery + "\" is found in the following documents:\n*****************************************************")
+            for posting in postingList:
+                #ignore the first posting as its the freq
+                if count > 0:
+                    print(posting)
+                count += 1
+
+        #else check for spelling corrections
+        else:
+            userQueryList = []
+            userQueryList.append(userQuery)
+            queryBigrams = createBigramIndex(userQueryList)
+            associatedTermsList = []
+            correctedTerms = []
+            #for bigram in querybigrams
+            for bigram in queryBigrams:
+                if bigram in bigramIndex:
+                    associatedTerms = bigramIndex[bigram]
+                    associatedTermsList.extend(associatedTerms)
+            #create set of terms associated with bigram from bigram index
+            associatedTermsSet = set(associatedTermsList)
+            #for terms, calc the jaccard coefficient against query
+            for term in associatedTermsSet:
+                termSet = set(term)
+                querySet = set(userQuery)
+                jDistance = nltk.jaccard_distance(termSet,querySet)
+                #if within threshold, add to spelling corrected list
+                if round(jDistance,2) <= 0.25:
+                    correctedTerms.append(term)
+
+            if len(correctedTerms) == 0:
+                print("The term \"" + userQuery + "\" is too vague to be searched for.\nPlease try again.\n")
+            else:
+                #return spelling correct list
+                print("The term \"" + userQuery +  "\" could not be found. Did you mean:\n*************************************************")
+                for correctedTerm in correctedTerms:
+                    print(correctedTerm)
+
 
 def writeToJSON(data,fileName):
 
@@ -75,18 +132,29 @@ def writeToJSON(data,fileName):
 def createBigramIndex(termIndex):
 
     bigramIndex = {}
-
     for term in termIndex:
-        bigrams = nltk.bigrams(term)
-        for bigram in bigrams:
+        bigramList = nltk.bigrams(term)
+        count = 1
+        for bigram in bigramList:
             #bigram -> ["a","b"]
-            bigramString = str(bigram[0]) + str(bigram[1])
+            if count == 1:
+                bigramString = "$" + str(bigram[0]) + str(bigram[1])
+            
+            elif count == len(str(term)) - 1:
+                bigramString = str(bigram[0]) + str(bigram[1]) + "$"
+            
+            else:        
+                bigramString = str(bigram[0]) + str(bigram[1])
+            count += 1
+            
             if bigramString not in bigramIndex:
                 termList = [term]
                 bigramIndex[bigramString] = termList
             else:
                 bigramIndex[bigramString].append(term)
-    
+        else:
+            exit
+            
     return bigramIndex
 
 def generateTermDict(tokens,termIndex,fileName):
@@ -179,7 +247,7 @@ def get_scene_urls(target,baseURL):
             linkString = link.get('href')
             if "amazon" not in linkString and "full" not in linkString:
                 targeturls.append(baseURL + "/" + linkString)
-            
+
     return targeturls
 
 def get_sonnet_urls(target,baseURL):
